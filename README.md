@@ -1,3 +1,5 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 # ftu - Flutter Translation Utility
 
 ftu is used to generate CSV translation files from Flutter projects that use GetX for internationalization and translations.
@@ -27,3 +29,6 @@ fts -l de --csv de.csv
 ```
 
 The result will be a `de.dart` file containing a `Map<String,String>` of translations.
+
+## Authors
+ * **Andrea Ricchi** - *Maintainer* - [AndreaRicchi](https://github.com/AndreaRicchi)
