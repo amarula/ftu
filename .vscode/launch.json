@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Rust Debug Launch",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceRoot}/target/debug/${workspaceRootFolderName}",
+            "args": [
+                "-l",
+                "it"
+            ],
+            "cwd": "${workspaceRoot}/target/debug/",
+            "sourceLanguages": [
+                "rust"
+            ],
+            "preLaunchTask": "rust: cargo build"
+        },
+    ],
+}
