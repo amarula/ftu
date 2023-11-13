@@ -107,6 +107,6 @@ pub fn dart_to_csv(path: &String, language: &String) {
     let _ = wtr.flush();
 
     for translation in all_translations {
-        let _ = write_file(&language, &translation.0, &translation.1);
+        let _ = write_file(language, &translation.0, &translation.1);
     }
 }
