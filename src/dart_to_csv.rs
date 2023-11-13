@@ -25,7 +25,7 @@ fn read_file(path: String) -> Vec<String> {
 
         for ip in lines.flatten() {
             let start_bytes = ip.find('\'').unwrap_or(0);
-            let end_bytes = ip.find(".tr").unwrap_or(ip.len());
+            let end_bytes = ip.find(".tr,").unwrap_or(ip.len());
             let mut result = (ip[start_bytes..end_bytes]).to_string();
 
             if !ip.ends_with(".tr,") {
@@ -49,9 +49,10 @@ fn read_file(path: String) -> Vec<String> {
                 result.pop();
             }
 
-            println!("1.Translation found: {result}");
-
-            translations.push(result);
+            if translations.contains(&result) {
+                println!("1.Translation found: {result}");
+                translations.push(result);
+            }
         }
     }
 
