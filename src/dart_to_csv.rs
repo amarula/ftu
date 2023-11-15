@@ -49,7 +49,7 @@ fn read_file(path: String) -> Vec<String> {
                 result.pop();
             }
 
-            if translations.contains(&result) {
+            if !translations.contains(&result) {
                 println!("1.Translation found: {result}");
                 translations.push(result);
             }
@@ -81,6 +81,10 @@ fn write_file(
 }
 
 pub fn dart_to_csv(path: &String, language: &String) {
+    if path.is_empty() || language.is_empty() {
+        return;
+    }
+
     let mut all_translations = Vec::new();
 
     let project_path = { path }.to_owned() + "/**/*.dart";
