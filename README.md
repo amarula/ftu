@@ -21,7 +21,7 @@ ftu -l en -p /home/work/flutter-project
 
 The result will be a CSV-generated file containing 3 columns: location, source, and translation.
 
-### Dart translation generation (TODO)
+### Dart translation generation
 
 To generate the Dart file containing the translation from the CSV, run the program choosing the language e specify the 
 CSV file:
