@@ -62,7 +62,7 @@ dependencies = [
 
 [[package]]
 name = "ftu"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "argh",
  "csv",
