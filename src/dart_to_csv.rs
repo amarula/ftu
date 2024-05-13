@@ -21,14 +21,21 @@ fn read_file(path: String) -> Vec<String> {
     let mut translations = Vec::new();
 
     if let Ok(lines) = read_lines(path) {
-        for ip in lines.map_while(Result::ok) {
-            if !ip.contains("'.tr") {
-                continue;
-            }
+        let mut previous_line = String::new();
 
+        for ip in lines.map_while(Result::ok) {
             let start_bytes = ip.find('\'').unwrap_or(0);
             let end_bytes = ip.find("'.tr").unwrap_or(ip.len());
             let mut result = (ip[start_bytes..end_bytes]).to_string();
+
+            if !ip.contains(".tr,") && !ip.contains(".tr;") {
+                previous_line = result;
+                continue;
+            }
+
+            if !previous_line.is_empty() && previous_line.ends_with('\'') && ip.ends_with(".tr,") {
+                result = previous_line.clone();
+            }
 
             if result.trim().is_empty() {
                 continue;
