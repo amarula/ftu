@@ -1,58 +1,82 @@
 use std::{
     error::Error,
     fs::{File, OpenOptions},
-    io::{self, BufRead},
-    path::Path,
+    io::{BufRead, BufReader},
 };
 
 use glob::glob;
 
-fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where
-    P: AsRef<Path>,
-{
-    let file = File::open(filename)?;
-    Ok(io::BufReader::new(file).lines())
-}
-
 fn read_file(path: String) -> Vec<String> {
     println!("Parsing file {path}");
 
+    let file = match File::open(path) {
+        Ok(f) => f,
+        Err(_) => return Vec::new(),
+    };
+
+    let reader = BufReader::new(file);
     let mut translations = Vec::new();
 
-    if let Ok(lines) = read_lines(path) {
-        let mut previous_line = String::new();
+    let mut previous_line = String::new();
+    let mut parsing_multi_line = false;
+    let mut multi_line = String::new();
 
-        for ip in lines.map_while(Result::ok) {
-            let start_bytes = ip.find('\'').unwrap_or(0);
-            let end_bytes = ip.find("'.tr").unwrap_or(ip.len());
-            let mut result = (ip[start_bytes..end_bytes]).to_string();
+    for current_line in reader.lines().map_while(Result::ok) {
+        let start_bytes = current_line.find('\'').unwrap_or(0);
+        let end_bytes = current_line.find("'.tr").unwrap_or(current_line.len());
+        let mut result = (current_line[start_bytes..end_bytes]).to_string();
 
-            if !ip.contains(".tr,") && !ip.contains(".tr;") {
-                previous_line = result;
+        if !parsing_multi_line && current_line.ends_with("'''") {
+            parsing_multi_line = true;
+            continue;
+        }
+
+        if parsing_multi_line {
+            if current_line.ends_with(".tr,") && previous_line.ends_with("'''") {
+                parsing_multi_line = false;
+                println!("1.Translation found: {multi_line}");
+                translations.push(multi_line.clone());
+                continue;
+            } else {
+                let mut current_line_clone = current_line.clone();
+
+                if current_line_clone.ends_with("'''") {
+                    previous_line = current_line.clone();
+                    current_line_clone.truncate(current_line_clone.len() - 3)
+                }
+
+                multi_line += current_line_clone.as_str();
                 continue;
             }
+        }
 
-            if !previous_line.is_empty() && previous_line.ends_with('\'') && ip.ends_with(".tr,") {
-                result = previous_line.clone();
-            }
+        if !current_line.contains(".tr,") && !current_line.contains(".tr;") && !parsing_multi_line {
+            previous_line = result;
+            continue;
+        }
 
-            if result.trim().is_empty() {
-                continue;
-            }
+        if !previous_line.is_empty()
+            && previous_line.ends_with('\'')
+            && current_line.ends_with(".tr,")
+        {
+            result = previous_line.clone();
+        }
 
-            while result.starts_with('\'') {
-                result.remove(0);
-            }
+        if result.trim().is_empty() {
+            continue;
+        }
 
-            while result.ends_with('\'') {
-                result.pop();
-            }
+        while result.starts_with('\'') {
+            result.remove(0);
+        }
 
-            if !translations.contains(&result) {
-                println!("1.Translation found: {result}");
-                translations.push(result);
-            }
+        while result.ends_with('\'') {
+            result.pop();
+        }
+
+        if !translations.contains(&result) {
+            println!("1.Translation found: {result}");
+            translations.push(result);
         }
     }
 
