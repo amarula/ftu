@@ -24,6 +24,7 @@ pub fn main() {
 
     if args.csv.is_some() {
         csv_to_dart::csv_to_dart(&args.csv.unwrap(), &args.language)
+            .expect("Failed to convert CSV to Dart");
     } else {
         dart_to_csv::dart_to_csv(&args.path, &args.language);
     }
