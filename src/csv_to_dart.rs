@@ -78,16 +78,19 @@ mod tests {
     use super::*;
     use std::fs;
     use std::io::Read;
+    use std::io::Write as IoWrite;
     use std::path::Path;
     use tempfile::NamedTempFile;
-    use std::io::Write as IoWrite;
 
     fn cleanup_dart_file(language_name: &str) {
         let dart_file_path_str = format!("{}.dart", language_name);
         let dart_file_path = Path::new(&dart_file_path_str);
         if dart_file_path.exists() {
             if let Err(e) = fs::remove_file(dart_file_path) {
-                eprintln!("Warning: Could not remove Dart file {:?}: {}", dart_file_path, e);
+                eprintln!(
+                    "Warning: Could not remove Dart file {:?}: {}",
+                    dart_file_path, e
+                );
             }
         }
     }
@@ -136,9 +139,11 @@ mod tests {
     #[test]
     fn test_read_file_empty_csv() {
         let mut temp_csv_file = NamedTempFile::new().expect("Failed to create temp CSV file");
-        temp_csv_file.write_all(b"location,source,translation\n").expect("Failed to write to temp CSV");
+        temp_csv_file
+            .write_all(b"location,source,translation\n")
+            .expect("Failed to write to temp CSV");
         let file_path_str = temp_csv_file.path().to_str().unwrap().to_string();
-        
+
         let records = read_file(&file_path_str);
         assert!(records.is_empty());
     }
@@ -149,7 +154,9 @@ mod tests {
                        loc1,src1,trn1\n\
                        loc2,src2,trn2";
         let mut temp_csv_file = NamedTempFile::new().expect("Failed to create temp CSV file");
-        temp_csv_file.write_all(content.as_bytes()).expect("Failed to write to temp CSV");
+        temp_csv_file
+            .write_all(content.as_bytes())
+            .expect("Failed to write to temp CSV");
         let file_path_str = temp_csv_file.path().to_str().unwrap().to_string();
 
         let records = read_file(&file_path_str);
@@ -165,9 +172,11 @@ mod tests {
                        loc2,src2,trn2\n\
                        loc3,src1,trn1_dup";
         let mut temp_csv_file = NamedTempFile::new().expect("Failed to create temp CSV file");
-        temp_csv_file.write_all(content.as_bytes()).expect("Failed to write to temp CSV");
+        temp_csv_file
+            .write_all(content.as_bytes())
+            .expect("Failed to write to temp CSV");
         let file_path_str = temp_csv_file.path().to_str().unwrap().to_string();
-        
+
         let records = read_file(&file_path_str);
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].source, "src1");
@@ -182,7 +191,9 @@ mod tests {
                        this,isnot,enough,fields\n\
                        loc3,src3,trn3";
         let mut temp_csv_file = NamedTempFile::new().expect("Failed to create temp CSV file");
-        temp_csv_file.write_all(content.as_bytes()).expect("Failed to write to temp CSV");
+        temp_csv_file
+            .write_all(content.as_bytes())
+            .expect("Failed to write to temp CSV");
         let file_path_str = temp_csv_file.path().to_str().unwrap().to_string();
 
         let records = read_file(&file_path_str);
@@ -198,9 +209,11 @@ mod tests {
                        \n\
                        loc2,src2,trn2\n";
         let mut temp_csv_file = NamedTempFile::new().expect("Failed to create temp CSV file");
-        temp_csv_file.write_all(content.as_bytes()).expect("Failed to write to temp CSV");
+        temp_csv_file
+            .write_all(content.as_bytes())
+            .expect("Failed to write to temp CSV");
         let file_path_str = temp_csv_file.path().to_str().unwrap().to_string();
-        
+
         let records = read_file(&file_path_str);
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].source, "src1");
@@ -211,7 +224,7 @@ mod tests {
     fn test_write_file_empty_records() {
         let lang_name = "empty_lang_test_write";
         let records: Vec<Record> = Vec::new();
-        
+
         let result = write_file(&lang_name.to_string(), &records);
         assert!(result.is_ok());
 
@@ -247,7 +260,7 @@ mod tests {
                 source: "foo".to_string(),
                 translation: "bar".to_string(),
             },
-             Record {
+            Record {
                 location: "l3".to_string(),
                 source: "quote_test".to_string(),
                 translation: "this is a \"test\"".to_string(),
@@ -268,9 +281,9 @@ mod tests {
                 "// ignore_for_file: file_names\n",
                 "\n",
                 "const Map<String, String> {} = {{\n",
-                "  \"hello\": \"world\",\n", 
-                "  \"foo\": \"bar\",\n", 
-                "  \"quote_test\": \"this is a \\\"test\\\"\",\n", 
+                "  \"hello\": \"world\",\n",
+                "  \"foo\": \"bar\",\n",
+                "  \"quote_test\": \"this is a \\\"test\\\"\",\n",
                 "}};\n"
             ),
             lang_name
@@ -285,13 +298,15 @@ mod tests {
                            app_title,AppTitle,My Application\n\
                            greeting,GreetingMessage,Hello User!\n\
                            another_loc,AppTitle,This Should Be Ignored Because First AppTitle Wins";
-        
+
         let mut temp_csv_file = NamedTempFile::new().expect("Failed to create temp CSV file");
-        temp_csv_file.write_all(csv_content.as_bytes()).expect("Failed to write to temp CSV");
+        temp_csv_file
+            .write_all(csv_content.as_bytes())
+            .expect("Failed to write to temp CSV");
         let csv_path_str = temp_csv_file.path().to_str().unwrap().to_string();
 
         let lang_name = "integration_lang_test";
-        
+
         let result = csv_to_dart(&csv_path_str, &lang_name.to_string());
         assert!(result.is_ok());
 
@@ -307,8 +322,8 @@ mod tests {
                 "// ignore_for_file: file_names\n",
                 "\n",
                 "const Map<String, String> {} = {{\n",
-                "  \"AppTitle\": \"My Application\",\n", 
-                "  \"GreetingMessage\": \"Hello User!\",\n", 
+                "  \"AppTitle\": \"My Application\",\n",
+                "  \"GreetingMessage\": \"Hello User!\",\n",
                 "}};\n"
             ),
             lang_name
@@ -321,6 +336,9 @@ mod tests {
     fn test_read_file_non_existent_csv() {
         let file_path = "non_existent_test_file.csv".to_string();
         let records = read_file(&file_path);
-        assert!(records.is_empty(), "Expected empty records for non-existent file.");
+        assert!(
+            records.is_empty(),
+            "Expected empty records for non-existent file."
+        );
     }
 }
