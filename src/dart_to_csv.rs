@@ -84,15 +84,14 @@ fn read_file(path: String) -> Vec<String> {
 }
 
 fn write_file(
-    language: &String,
+    csv_path: &String,
     sources_file: &String,
     translations: &Vec<String>,
 ) -> Result<(), Box<dyn Error>> {
     let file = OpenOptions::new()
-        .write(true)
         .create(true)
         .append(true)
-        .open(format!("{language}.csv"))
+        .open(csv_path)
         .unwrap();
     let mut wtr = csv::Writer::from_writer(file);
     for tr in translations {
@@ -130,12 +129,51 @@ pub fn dart_to_csv(path: &String, language: &String) {
         return;
     }
 
-    let mut wtr =
-        csv::Writer::from_path(format!("{}.csv", language)).expect("Failed to create CSV file");
+    let csv_output_path = format!("{}/{}.csv", path, language);
+    let mut wtr = csv::Writer::from_path(&csv_output_path).expect("Failed to create CSV file");
+
     let _ = wtr.write_record(["location", "source", "translation"]);
     let _ = wtr.flush();
 
     for translation in all_translations {
-        let _ = write_file(language, &translation.0, &translation.1);
+        let _ = write_file(&csv_output_path, &translation.0, &translation.1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::io::Write as IoWrite;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_dart_to_csv_creates_correct_csv() {
+        let dir = tempdir().unwrap();
+        let dart_file_path = dir.path().join("example.dart");
+
+        // Simulate Dart file with translatable strings
+        let dart_content = "
+      final a = 'hello'.tr;
+      final b = 'world'.tr;
+    ";
+
+        let mut file = File::create(&dart_file_path).unwrap();
+        writeln!(file, "{}", dart_content).unwrap();
+
+        let dir_path = dir.path().to_str().unwrap().to_string();
+        let language = "en".to_string();
+
+        // Run the conversion
+        dart_to_csv(&dir_path, &language);
+
+        // Check the CSV output
+        let csv_path = dir.path().join("en.csv");
+        assert!(csv_path.exists(), "CSV file should be created");
+
+        let content = fs::read_to_string(csv_path).unwrap();
+        assert!(content.contains("hello"));
+        assert!(content.contains("world"));
+        assert!(content.contains("example.dart"));
     }
 }
