@@ -1,15 +1,15 @@
+use glob::glob;
+use regex::Regex;
 use std::{
     error::Error,
     fs::{File, OpenOptions},
     io::{BufRead, BufReader},
 };
 
-use glob::glob;
-
 fn read_file(path: String) -> Vec<String> {
     println!("Parsing file {path}");
 
-    let file = match File::open(path) {
+    let file = match File::open(&path) {
         Ok(f) => f,
         Err(_) => return Vec::new(),
     };
@@ -17,66 +17,38 @@ fn read_file(path: String) -> Vec<String> {
     let reader = BufReader::new(file);
     let mut translations = Vec::new();
 
-    let mut previous_line = String::new();
+    let single_line_re = Regex::new(r"'([^']+?)'\s*\.tr").unwrap();
+    let triple_quote_start_re = Regex::new(r"'''").unwrap();
     let mut parsing_multi_line = false;
     let mut multi_line = String::new();
 
-    for current_line in reader.lines().map_while(Result::ok) {
-        let start_bytes = current_line.find('\'').unwrap_or(0);
-        let end_bytes = current_line.find("'.tr").unwrap_or(current_line.len());
-        let mut result = (current_line[start_bytes..end_bytes]).to_string();
+    for line in reader.lines().map_while(Result::ok) {
+        if parsing_multi_line {
+            if triple_quote_start_re.is_match(&line) {
+                parsing_multi_line = false;
+                if !multi_line.is_empty() && !translations.contains(&multi_line) {
+                    println!("1.Translation found (multi): {multi_line}");
+                    translations.push(multi_line.clone());
+                }
+                multi_line.clear();
+            } else {
+                multi_line.push_str(&line);
+                multi_line.push('\n');
+            }
+            continue;
+        }
 
-        if !parsing_multi_line && current_line.ends_with("'''") {
+        if triple_quote_start_re.is_match(&line) && line.contains(".tr") {
             parsing_multi_line = true;
             continue;
         }
 
-        if parsing_multi_line {
-            if current_line.ends_with(".tr,") && previous_line.ends_with("'''") {
-                parsing_multi_line = false;
-                println!("1.Translation found: {multi_line}");
-                translations.push(multi_line.clone());
-                continue;
-            } else {
-                let mut current_line_clone = current_line.clone();
-
-                if current_line_clone.ends_with("'''") {
-                    previous_line = current_line.clone();
-                    current_line_clone.truncate(current_line_clone.len() - 3)
-                }
-
-                multi_line += current_line_clone.as_str();
-                continue;
+        for cap in single_line_re.captures_iter(&line) {
+            let tr_string = cap[1].trim().to_string();
+            if !translations.contains(&tr_string) {
+                println!("1.Translation found: {tr_string}");
+                translations.push(tr_string);
             }
-        }
-
-        if !current_line.contains(".tr,") && !current_line.contains(".tr;") && !parsing_multi_line {
-            previous_line = result;
-            continue;
-        }
-
-        if !previous_line.is_empty()
-            && previous_line.ends_with('\'')
-            && current_line.ends_with(".tr,")
-        {
-            result = previous_line.clone();
-        }
-
-        if result.trim().is_empty() {
-            continue;
-        }
-
-        while result.starts_with('\'') {
-            result.remove(0);
-        }
-
-        while result.ends_with('\'') {
-            result.pop();
-        }
-
-        if !translations.contains(&result) {
-            println!("1.Translation found: {result}");
-            translations.push(result);
         }
     }
 
@@ -156,6 +128,9 @@ mod tests {
         let dart_content = "
       final a = 'hello'.tr;
       final b = 'world'.tr;
+      final c = 'Concatenated'.tr + string;
+      final d = 'Multi line string'
+                .tr,;
     ";
 
         let mut file = File::create(&dart_file_path).unwrap();
