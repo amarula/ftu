@@ -61,7 +61,7 @@ fn write_file(language: &String, translations: &Vec<Record>) -> std::io::Result<
     for record in translations {
         let s = record.source.replace("\"", "\\\"");
         let t = record.translation.replace("\"", "\\\"");
-        file_writer.write_all(format!("  \"{0}\": \"{1}\",\n", s, t).as_bytes())?;
+        file_writer.write_all(format!("  '{0}': '{1}',\n", s, t).as_bytes())?;
     }
     file_writer.write_all(b"};\n")?;
     file_writer.flush()?;
@@ -281,9 +281,9 @@ mod tests {
                 "// ignore_for_file: file_names\n",
                 "\n",
                 "const Map<String, String> {} = {{\n",
-                "  \"hello\": \"world\",\n",
-                "  \"foo\": \"bar\",\n",
-                "  \"quote_test\": \"this is a \\\"test\\\"\",\n",
+                "  'hello': 'world',\n",
+                "  'foo': 'bar',\n",
+                "  'quote_test': 'this is a \\\"test\\\"',\n",
                 "}};\n"
             ),
             lang_name
@@ -322,8 +322,8 @@ mod tests {
                 "// ignore_for_file: file_names\n",
                 "\n",
                 "const Map<String, String> {} = {{\n",
-                "  \"AppTitle\": \"My Application\",\n",
-                "  \"GreetingMessage\": \"Hello User!\",\n",
+                "  'AppTitle': 'My Application',\n",
+                "  'GreetingMessage': 'Hello User!',\n",
                 "}};\n"
             ),
             lang_name
