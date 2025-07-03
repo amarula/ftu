@@ -22,7 +22,7 @@ fn read_file(path: &String) -> Vec<Record> {
     let mut translations = Vec::new();
     let reader_result = csv::Reader::from_path(path);
     if reader_result.is_err() {
-        eprintln!("Failed to open CSV file at path: {}", path);
+        eprintln!("Failed to open CSV file at path: {path}");
         return translations;
     }
     let mut reader = reader_result.unwrap();
@@ -31,7 +31,7 @@ fn read_file(path: &String) -> Vec<Record> {
         let record: Record = match result {
             Ok(r) => r,
             Err(e) => {
-                eprintln!("Error deserializing record: {}", e);
+                eprintln!("Error deserializing record: {e}");
                 Record {
                     location: String::from("error"),
                     source: String::from("error"),
@@ -52,16 +52,16 @@ fn read_file(path: &String) -> Vec<Record> {
 }
 
 fn write_file(language: &String, translations: &Vec<Record>) -> std::io::Result<()> {
-    let file_path = format!("{}.dart", language);
+    let file_path = format!("{language}.dart");
     let file = File::create(&file_path)?;
     let mut file_writer = LineWriter::new(file);
     file_writer.write_all(b"// ignore_for_file: file_names\n")?;
     file_writer.write_all(b"\n")?;
-    file_writer.write_all(format!("const Map<String, String> {0} = {{\n", language).as_bytes())?;
+    file_writer.write_all(format!("const Map<String, String> {language} = {{\n").as_bytes())?;
     for record in translations {
         let s = record.source.replace("\"", "\\\"");
         let t = record.translation.replace("\"", "\\\"");
-        file_writer.write_all(format!("  '{0}': '{1}',\n", s, t).as_bytes())?;
+        file_writer.write_all(format!("  '{s}': '{t}',\n").as_bytes())?;
     }
     file_writer.write_all(b"};\n")?;
     file_writer.flush()?;

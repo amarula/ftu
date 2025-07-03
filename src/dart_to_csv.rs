@@ -80,7 +80,7 @@ pub fn dart_to_csv(path: &String, language: &String) {
         return;
     }
 
-    let csv_output_path = format!("{}/{}.csv", path, language);
+    let csv_output_path = format!("{path}/{language}.csv");
     let mut wtr = csv::Writer::from_path(&csv_output_path).expect("Failed to create CSV file");
 
     let _ = wtr.write_record(["location", "source", "translation"]);
