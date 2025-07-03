@@ -2,18 +2,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Rust Debug Launch",
+            "name": "Test Debug",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceRoot}/target/debug/${workspaceRootFolderName}",
-            "args": [
-                "-l",
-                "it"
-            ],
-            "cwd": "${workspaceRoot}/target/debug/",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--verbose",
+                ],
+            },
             "sourceLanguages": [
                 "rust"
             ],
+            "cwd": "${workspaceRoot}/target/debug/",
             "preLaunchTask": "rust: cargo build"
         },
     ],
