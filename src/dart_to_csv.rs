@@ -2,57 +2,36 @@ use glob::glob;
 use regex::Regex;
 use std::{
     error::Error,
-    fs::{File, OpenOptions},
+    fs::{self, OpenOptions},
     io::{BufRead, BufReader},
 };
 
-fn read_file(path: String) -> Vec<String> {
+fn read_file(path: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     println!("Parsing file {path}");
 
-    let file = match File::open(&path) {
-        Ok(f) => f,
-        Err(_) => return Vec::new(),
-    };
-
+    let file = fs::File::open(path)?;
     let reader = BufReader::new(file);
-    let mut translations = Vec::new();
+    let lines: Vec<String> = reader.lines().collect::<Result<Vec<_>, _>>()?;
 
-    let single_line_re = Regex::new(r"'([^']+?)'\s*\.tr").unwrap();
-    let triple_quote_start_re = Regex::new(r"'''").unwrap();
-    let mut parsing_multi_line = false;
-    let mut multi_line = String::new();
+    // Join all lines into a single string to handle multi-line cases
+    let content = lines.join("\n");
 
-    for line in reader.lines().map_while(Result::ok) {
-        if parsing_multi_line {
-            if triple_quote_start_re.is_match(&line) {
-                parsing_multi_line = false;
-                if !multi_line.is_empty() && !translations.contains(&multi_line) {
-                    println!("1.Translation found (multi): {multi_line}");
-                    translations.push(multi_line.clone());
-                }
-                multi_line.clear();
-            } else {
-                multi_line.push_str(&line);
-                multi_line.push('\n');
-            }
-            continue;
-        }
+    // Regex pattern to match strings ending with .tr
+    // This pattern matches:
+    // - Single or double quoted strings
+    // - Followed by .tr
+    // - Handles potential whitespace and punctuation after .tr
+    let re = Regex::new(r#"['"]([^'"]*?)['"][\s\n]*\.tr"#)?;
 
-        if triple_quote_start_re.is_match(&line) && line.contains(".tr") {
-            parsing_multi_line = true;
-            continue;
-        }
+    let mut tr_strings = Vec::new();
 
-        for cap in single_line_re.captures_iter(&line) {
-            let tr_string = cap[1].trim().to_string();
-            if !translations.contains(&tr_string) {
-                println!("1.Translation found: {tr_string}");
-                translations.push(tr_string);
-            }
+    for captures in re.captures_iter(&content) {
+        if let Some(matched) = captures.get(1) {
+            tr_strings.push(matched.as_str().to_string());
         }
     }
 
-    translations
+    Ok(tr_strings)
 }
 
 fn write_file(
@@ -89,7 +68,7 @@ pub fn dart_to_csv(path: &String, language: &String) {
     {
         let translation_in_file = (
             path.display().to_string(),
-            read_file(path.display().to_string()),
+            read_file(path.display().to_string()).unwrap(),
         );
         if translation_in_file.1.is_empty() {
             continue;
@@ -115,7 +94,7 @@ pub fn dart_to_csv(path: &String, language: &String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
+    use std::fs::{self, File};
     use std::io::Write as IoWrite;
     use tempfile::tempdir;
 
@@ -131,6 +110,8 @@ mod tests {
       final c = 'Concatenated'.tr + string;
       final d = 'Multi line string'
                 .tr,;
+      final e = 'not a tr string';
+      final f = 'another'.tr;
     ";
 
         let mut file = File::create(&dart_file_path).unwrap();
@@ -147,8 +128,11 @@ mod tests {
         assert!(csv_path.exists(), "CSV file should be created");
 
         let content = fs::read_to_string(csv_path).unwrap();
+        assert!(content.contains("example.dart"));
         assert!(content.contains("hello"));
         assert!(content.contains("world"));
-        assert!(content.contains("example.dart"));
+        assert!(content.contains("Concatenated"));
+        assert!(content.contains("Multi line string"));
+        assert!(content.contains("another"));
     }
 }
